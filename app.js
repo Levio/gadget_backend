@@ -50,11 +50,21 @@ app.on("error", (err, ctx) => {
   console.error("server error", err, ctx);
 });
 
-const wsclients = [];
+let wsclients = [];
 
 wsapp.ws.use(function (ctx, next) {
+
   wsclients.push(ctx);
-  ctx.websocket.send(JSON.stringify({ type: "link", message: "链接成功" }));
+  ctx.websocket.send(JSON.stringify({
+    type: "link",
+    message: "链接成功"
+  }));
+  wsclients.forEach((client) => {
+    client.websocket.send(JSON.stringify({
+      type: "jn",
+      message: wsclients.length,
+    }));
+  });
   return next(ctx);
 });
 wsapp.ws.use(
@@ -73,8 +83,21 @@ wsapp.ws.use(
           client.websocket.send(data);
         });
       }
+      if (msg.type === 'exit') {
+        wsclients = wsclients.filter(item => item !== ctx)
+        const data = JSON.stringify({
+          type: "jn",
+          message: wsclients.length,
+        });
+        wsclients.forEach((client) => {
+          client.websocket.send(data);
+        });
+      }
     });
   })
 );
 
-module.exports = { app, wsapp };
+module.exports = {
+  app,
+  wsapp
+};
